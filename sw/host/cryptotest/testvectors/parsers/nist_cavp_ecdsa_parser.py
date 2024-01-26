@@ -36,14 +36,14 @@ def parse_testcases(args) -> None:
         for test_vec in raw_testcases[section_name]:
             test_case = {
                 "algorithm": "ecdsa",
-                "operation": "verify",
+                "operation": args.operation,
                 "curve": EC_NAME_MAPPING[curve],
                 "hash_alg": hash_alg.lower(),
                 "message": str_to_byte_array(test_vec["Msg"]),
-                "qx": int(test_vec["Qx"], 16),
-                "qy": int(test_vec["Qy"], 16),
-                "r": int(test_vec["R"], 16),
-                "s": int(test_vec["S"], 16),
+                "qx": test_vec["Qx"],
+                "qy": test_vec["Qy"],
+                "r": test_vec["R"],
+                "s": test_vec["S"]
             }
 
             # NIST test vectors express the expected result as a string with a
@@ -52,13 +52,14 @@ def parse_testcases(args) -> None:
             # character of the result field.
             # Example passing vector: Result = P (0 )
             # Example failing vector: Result = F (3 - S Changed)
-            result_str = test_vec["Result"][0]
-            if result_str == "P":
-                test_case["result"] = True
-            elif result_str == "F":
-                test_case["result"] = False
-            else:
-                raise ValueError(f"Unknown verification result value: {result_str}")
+            if args.operation == "verify":
+                result_str = test_vec["Result"][0]
+                if result_str == "P":
+                    test_case["result"] = True
+                elif result_str == "F":
+                    test_case["result"] = False
+                else:
+                    raise ValueError(f"Unknown verification result value: {result_str}")
 
             test_cases.append(test_case)
 
@@ -83,6 +84,11 @@ def main() -> int:
     parser.add_argument(
         "--dst",
         help="Destination of the output file."
+    )
+    parser.add_argument(
+        "operation",
+        choices = ["sign", "verify"],
+        help = "ECSDA operation"
     )
     parser.add_argument(
         "--schema",
